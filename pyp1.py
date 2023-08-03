@@ -1,5 +1,9 @@
+#!/usr/bin/python3
+
 import re
 import serial
+import sys
+import json
 
 from typing import List, Dict
 from influxdb import InfluxDBClient
@@ -37,7 +41,6 @@ def getP1frame() -> List[str]:
 			elif inblock and line[0] == '!':
 				# This marks the end of a frame
 				break
-
 			if inblock:
 				frame.append(line)
 	finally:
@@ -68,7 +71,7 @@ def get_measurement(frame: List[str]) -> Dict:
 	
 	return {
 		"measurement": "p1data",
-		"time": str(datetime.now()),
+		"time": str(datetime.now().astimezone()),
 		"fields": fields
 	}
 
@@ -78,6 +81,13 @@ def post_measurement(measurement: Dict) -> None:
 		print("Unable to upload to InfluxDB")
 
 if __name__ == "__main__":
+	verbose = len(sys.argv) > 1 and sys.argv[1] == '-v'
 	frame = getP1frame()
+	if verbose:
+		[print(f) for f in frame]
+
 	measurement = get_measurement(frame)
+	if verbose:
+		print(json.dumps(measurement, indent=4))
+
 	post_measurement(measurement)
